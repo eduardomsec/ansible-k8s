@@ -1,6 +1,6 @@
 # K8S 
 
-## Abount Playbook
+## About Playbook
 
 SO tested:
   - AlmaLinux
@@ -20,7 +20,7 @@ OBS: Remember to feed the file `hosts`.
 ### Documentation:
   - [ContainerD](https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd)
 
-### Abount CNI Calico
+### About CNI Calico
 
 ```bash
 curl https://docs.projectcalico.org/manifests/calico-typha.yaml -o calico.yaml
