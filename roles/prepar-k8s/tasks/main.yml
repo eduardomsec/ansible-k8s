@@ -1,0 +1,5 @@
+---
+# tasks file for prepar-k8s
+
+- name: Preparando para o K8S
+  include: prepar.yml

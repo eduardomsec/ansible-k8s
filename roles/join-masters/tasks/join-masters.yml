@@ -1,0 +1,34 @@
+---
+# tasks file for join-masters
+- name: debug
+  debug:
+    msg: "[MASTER] K8S_TOKEN_MASTER - O token eh {{ hostvars['K8S_TOKEN_MASTER']['command'] }}"
+
+# - name: Removendo o cluster
+#   command:
+#     kubeadm reset --force
+#   register: kubeadm_reset
+
+- name: Adicionando master ao cluster k8s
+  shell:
+    "{{ hostvars['K8S_TOKEN_MASTER']['command'] }}"
+
+- name: Registrando token
+  lineinfile:
+    dest: "./token"
+    line: "{{ hostvars['K8S_TOKEN_MASTER']['command'] }}"
+    create: yes
+    owner: ansible
+    group: ansible
+    mode: '0644'
+
+- name: Criando o diretorio .kube
+  file:
+    path: ~/.kube
+    state: directory
+
+- name: Linkando o arquivo admin.conf para o ~/.kube/config
+  file:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/.kube/config
+    state: link

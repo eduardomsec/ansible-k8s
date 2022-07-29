@@ -1,0 +1,18 @@
+[k8s-master]
+10.10.10.1
+
+[k8s-master-shadow]
+10.10.10.2
+10.10.10.3
+
+[k8s-workers]
+10.10.10.4
+10.10.10.5
+10.10.10.6
+10.10.10.7
+10.10.10.8
+
+[all:vars]
+control_plane_url='10.10.10.1:6443' #Recommended create LB haproxy for your control plane url 
+kubernetes_version="1.23.3"
+ansible_ssh_extra_args='-o StrictHostKeyChecking=no'

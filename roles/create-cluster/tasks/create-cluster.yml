@@ -1,0 +1,27 @@
+---
+# tasks file for create-cluster
+- name: Inicializando o cluster k8s
+  command:
+    kubeadm init --control-plane-endpoint {{ control_plane_url }} --upload-certs --pod-network-cidr=10.254.0.0/16 --service-cidr=10.253.0.0/16
+  register: kubeadm_init
+  changed_when: '"initialized successfully" in kubeadm_init.stdout'
+
+- name: Criando o diretorio .kube
+  file:
+    path: ~/.kube
+    state: directory
+
+- name: Linkando o arquivo admin.conf para o ~/.kube/config
+  file:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/.kube/config
+    state: link
+
+- name: Adicionando Pod Network
+  copy:
+    src: calico.yaml
+    dest: /home/ansible/calico.yaml
+
+- name: Configurando o pod network Calico
+  shell: kubectl apply -f /home/ansible/calico.yaml
+  register: calico_result

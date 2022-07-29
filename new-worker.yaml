@@ -1,0 +1,25 @@
+- hosts: 
+  - k8s-workers
+  become: yes
+  user: ansible
+  roles:
+  - { role: prepar-k8s, tags: ["prepar_k8s_role"] }
+
+- hosts: 
+  - k8s-workers
+  become: yes
+  user: ansible
+  roles:
+  - { role: install-k8s, tags: ["install_k8s_role"] }
+
+- hosts: k8s-master
+  become: yes
+  user: ansible
+  roles:
+  - { role: generate-token, tags: ["generate_token_role"] }
+
+- hosts: k8s-workers
+  become: yes
+  user: ansible
+  roles:
+  - { role: join-workers, tags: ["join_workers_role"] }

@@ -1,0 +1,5 @@
+---
+# tasks file for generate-token
+- include: generate-token-worker.yml
+
+- include: generate-token-master.yml

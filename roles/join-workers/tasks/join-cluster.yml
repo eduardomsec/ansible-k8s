@@ -1,0 +1,21 @@
+- name: debug
+  debug:
+    msg: "[WORKER] K8S_TOKEN_WORKER - O token eh {{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
+
+- name: Removendo o cluster
+  command:
+    kubeadm reset --force
+  register: kubeadm_reset
+
+- name: Adicionando o worker ao cluster k8s
+  shell:
+    "{{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
+
+- name: Registrando token
+  lineinfile:
+    dest: "./token"
+    line: "{{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
+    create: yes
+    owner: ansible
+    group: ansible
+    mode: '0644'

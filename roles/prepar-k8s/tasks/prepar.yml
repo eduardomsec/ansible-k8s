@@ -1,0 +1,29 @@
+- name: Busca linha swap
+  shell: awk '/swap/ {print $1}' /etc/fstab
+  register: swapLine
+
+- name: Comentando SWAP no fstab
+  shell: sed -i "s|{{ swapLine.stdout }}|#{{ swapLine.stdout}}|" /etc/fstab
+  when: "'#' not in swapLine.stdout"
+#   ansible.builtin.lineinfile:
+#     path: /etc/fstab
+#     regexp: '{{ swapLine.output }}'
+#     line: '#\1'
+#     backrefs: yes
+
+- name: Configurando Modulos
+  shell: |
+    cat <<EOF | tee /etc/modules-load.d/k8s.conf
+    br_netfilter
+    EOF
+
+- name: Configurando sysctl
+  shell: |
+    cat <<EOF | tee /etc/sysctl.d/k8s.conf
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables = 1
+    EOF
+
+- name: Aplicando regras runtime
+  shell:
+    sysctl --system && swapoff -a
