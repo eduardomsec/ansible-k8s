@@ -40,7 +40,7 @@ Now run de command:
 ansible-playbook -i hosts -k new-master.yaml 
 ```
 
-# Adicionando Worker após cluster criado
+# Create a new worker
 
 To add a new master node you will need to edit the file **hosts**, leaving the session **k8s-workers** just with the IP/hostname you want to add.
 Now run de command:
