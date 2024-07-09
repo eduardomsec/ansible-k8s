@@ -14,7 +14,7 @@
 
 [all:vars]
 user_run="administrador"
-control_plane_url='kube.pms.ba.gov.br:6443'
+control_plane_url='myurl.com.br:6443'
 kubernetes_version="1.30"
 kubernetes_pod_network_cidr="192.168.0.0/23"
 kubernetes_service_cidr="192.168.2.0/23"
