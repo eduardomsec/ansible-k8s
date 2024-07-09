@@ -3,7 +3,7 @@
   - k8s-master-shadow
   - k8s-workers
   become: yes
-  user: ansible
+  user: "{{ user_run }}"
   roles:
   - { role: prepar-k8s, tags: ["prepar_k8s_role"] }
 
@@ -12,30 +12,30 @@
   - k8s-master-shadow
   - k8s-workers
   become: yes
-  user: ansible
+  user: "{{ user_run }}"
   roles:
   - { role: install-k8s, tags: ["install_k8s_role"] }
 
 - hosts: k8s-master
   become: yes
-  user: ansible
+  user: "{{ user_run }}"
   roles:
   - { role: create-cluster, tags: ["create_cluster_role"] }
 
 - hosts: k8s-master
   become: yes
-  user: ansible
+  user: "{{ user_run }}"
   roles:
   - { role: generate-token, tags: ["generate_token_role"] }
 
 - hosts: k8s-master-shadow
   become: yes
-  user: ansible
+  user: "{{ user_run }}"
   roles:
   - { role: join-masters, tags: ["join_masters_role"] }
 
 - hosts: k8s-workers
   become: yes
-  user: ansible
+  user: "{{ user_run }}"
   roles:
   - { role: join-workers, tags: ["join_workers_role"] }

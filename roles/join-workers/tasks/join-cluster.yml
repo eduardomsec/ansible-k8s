@@ -1,21 +1,21 @@
 - name: debug
-  debug:
+  ansible.builtin.debug:
     msg: "[WORKER] K8S_TOKEN_WORKER - O token eh {{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
 
 - name: Removendo o cluster
-  command:
-    kubeadm reset --force
+  ansible.builtin.command:
+    cmd: kubeadm reset --force
   register: kubeadm_reset
 
 - name: Adicionando o worker ao cluster k8s
-  shell:
-    "{{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
+  ansible.builtin.command:
+    cmd: "{{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
 
-- name: Registrando token
-  lineinfile:
-    dest: "./token"
+- name: Registrando token em arquivo
+  ansible.builtin.lineinfile:
+    path: "./token"
     line: "{{ hostvars['K8S_TOKEN_WORKER']['command'] }}"
     create: yes
-    owner: ansible
-    group: ansible
+    owner: "{{ user_run }}"
+    group: "{{ user_run }}"
     mode: '0644'

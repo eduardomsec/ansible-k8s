@@ -1,9 +1,16 @@
 ---
 # tasks file for generate-token
 
+# - name: Gerando token master
+#   shell:
+#     echo "$(kubeadm token create --print-join-command) --control-plane --certificate-key $(kubeadm init phase upload-certs --upload-certs | grep -v certs)"
+#   register: k8s_token_master
+
 - name: Gerando token master
-  shell:
-    echo "$(kubeadm token create --print-join-command) --control-plane --certificate-key $(kubeadm init phase upload-certs --upload-certs | grep -v certs)"
+  ansible.builtin.command:
+    cmd: >
+      kubeadm token create --print-join-command |
+      awk '{print $0" --control-plane --certificate-key $(kubeadm init phase upload-certs --upload-certs | grep -v certs)"}'
   register: k8s_token_master
 
 - name: Adicionando token em dummy host
@@ -11,6 +18,6 @@
     name: "K8S_TOKEN_MASTER"
     command: "{{ k8s_token_master.stdout }}"
 
-- name: debug
+- name: Exibindo token para masters
   debug:
     msg: "Token para masters --> {{ hostvars['K8S_TOKEN_MASTER']['command'] }}"

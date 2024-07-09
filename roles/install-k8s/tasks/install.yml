@@ -1,20 +1,64 @@
-- name: Adicionando Repo Docker AlmaLinux
-  shell: 
-    yum config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+---
+# tasks file for setting up Docker and Kubernetes
+
+- name: Adicionando repositório Docker RedHat
+  ansible.builtin.command:
+    cmd: yum-config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
   when: ansible_facts['os_family'] == "RedHat"
 
-- name: Instalando Containerd e demais pacotes
+- name: Instalando Containerd e demais pacotes (RedHat)
   yum:
-    name: "{{ packages }}"
+    name:
+      - containerd.io
+      - nfs-utils
+      - git
+      - vim
     state: present
-  vars:
-    packages:
-    - containerd.io
-    - nfs-utils
-    - git
   when: ansible_facts['os_family'] == "RedHat"
 
-- name: Criando diretorio containerd
+- name: Instalando Containerd e demais pacotes (Debian)
+  apt:
+    name:
+      - nfs-common
+      - git
+      - vim
+      - apt-transport-https
+      - ca-certificates 
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Adicionando Preparação Docker repo
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Baixando chave GPG do Docker
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Adicionando Docker repo
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_lsb.codename }} stable"
+    state: present
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Instalando Containerd (Debian)
+  apt:
+    name:
+      - containerd.io
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Criando diretório containerd
   ansible.builtin.file:
     path: /etc/containerd
     state: directory
@@ -27,41 +71,86 @@
   notify:
     - Restart Containerd
 
-- name: Criando arquivo de modulos do containerd
-  shell: |
-    cat <<EOF | tee /etc/modules-load.d/containerd.conf
-    overlay
-    br_netfilter
-    EOF
+- name: Criando arquivo de módulos do containerd
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/containerd.conf
+    content: |
+      overlay
+      br_netfilter
 
-- name: Habilitando modulos
-  shell:
-    modprobe overlay
-    modprobe br_netfilter
+- name: Habilitando módulos
+  ansible.builtin.command:
+    cmd: modprobe {{ item }}
+  with_items:
+    - overlay
+    - br_netfilter
 
-- name: Adicionando parametros sysctl
-  shell: |
-    cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf
-    net.bridge.bridge-nf-call-iptables  = 1
-    net.ipv4.ip_forward                 = 1
-    net.bridge.bridge-nf-call-ip6tables = 1
-    EOF
+- name: Adicionando parâmetros sysctl
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.ipv4.ip_forward                 = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
   notify:
     - Aplicando sysctl
 
-- name: Adicionando Repo CentOS/RedHat/AlmaLinux
+- name: Adicionando repositório Kubernetes para CentOS/RedHat/AlmaLinux
   copy:
     src: kubernetes.repo
     dest: /etc/yum.repos.d/kubernetes.repo
   when: ansible_facts['os_family'] == "RedHat"
 
-- name: Instalando os pacotes kubeadm, kubelet e kubectl
-  shell:
-    yum install -y kubelet-{{ kubernetes_version }} kubeadm-{{ kubernetes_version }} kubectl-{{ kubernetes_version }} --disableexcludes=kubernetes
-  notify: 
+- name: Adicionando public key para Kubernetes (Debian)
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    mode: '0644'
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Adicionando repositório Kubernetes (Debian)
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+    state: present
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Instalando pacotes kubeadm, kubelet e kubectl (RedHat)
+  yum:
+    name:
+      - kubelet-{{ kubernetes_version }}
+      - kubeadm-{{ kubernetes_version }}
+      - kubectl-{{ kubernetes_version }}
+    state: present
+    disable_excludes: kubernetes
+  notify:
     - Restart Kubelet
     - Habilitando kubectl
   when: ansible_facts['os_family'] == "RedHat"
 
-- name: Reboot VM
+- name: Instalando pacotes kubeadm, kubelet e kubectl (Debian)
+  apt:
+    name:
+      - kubelet={{ kubernetes_version }}
+      - kubeadm={{ kubernetes_version }}
+      - kubectl={{ kubernetes_version }}
+    state: present
+    update_cache: yes
+  notify:
+    - Restart Kubelet
+    - Habilitando kubectl
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Hold pacotes Kubernetes
+  ansible.builtin.command:
+    cmd: apt-mark hold kubelet kubeadm kubectl
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Habilitando kubectl
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
+
+- name: Reiniciando a VM
   reboot:
+    msg: "Reiniciando para aplicar as mudanças."

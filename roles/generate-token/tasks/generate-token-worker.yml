@@ -2,8 +2,8 @@
 # tasks file for generate-token
 
 - name: Gerando token worker
-  shell:
-    kubeadm token create --print-join-command
+  ansible.builtin.command:
+    cmd: kubeadm token create --print-join-command
   register: k8s_token_worker
 
 - name: Adicionando token em dummy host
@@ -11,6 +11,6 @@
     name: "K8S_TOKEN_WORKER"
     command: "{{ k8s_token_worker.stdout }}"
 
-- name: debug
+- name: Exibindo token para workers
   debug:
     msg: "Token para workers --> {{ hostvars['K8S_TOKEN_WORKER']['command'] }}"

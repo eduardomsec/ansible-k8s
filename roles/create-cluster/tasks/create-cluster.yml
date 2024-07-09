@@ -1,27 +1,40 @@
 ---
 # tasks file for create-cluster
+
 - name: Inicializando o cluster k8s
-  command:
-    kubeadm init --control-plane-endpoint {{ control_plane_url }} --upload-certs --pod-network-cidr=10.254.0.0/16 --service-cidr=10.253.0.0/16
+  ansible.builtin.command:
+    cmd: kubeadm init --control-plane-endpoint {{ control_plane_url }} --upload-certs --pod-network-cidr={{ kubernetes_pod_network_cidr }} --service-cidr={{ kubernetes_service_cidr }}
   register: kubeadm_init
   changed_when: '"initialized successfully" in kubeadm_init.stdout'
 
-- name: Criando o diretorio .kube
-  file:
-    path: ~/.kube
+- name: Criando o diretório .kube
+  ansible.builtin.file:
+    path: /root/.kube
     state: directory
+    mode: '0755'
 
 - name: Linkando o arquivo admin.conf para o ~/.kube/config
-  file:
+  ansible.builtin.file:
     src: /etc/kubernetes/admin.conf
     dest: ~/.kube/config
     state: link
 
-- name: Adicionando Pod Network
-  copy:
-    src: calico.yaml
-    dest: /home/ansible/calico.yaml
+- name: Adicionando Calico
+  ansible.builtin.copy:
+    src: calico-operator.yaml
+    dest: /tmp/calico-operator.yaml
 
-- name: Configurando o pod network Calico
-  shell: kubectl apply -f /home/ansible/calico.yaml
+- name: Criando Calico Operator
+  ansible.builtin.command:
+    cmd: kubectl create -f /tmp/calico-operator.yaml
   register: calico_result
+
+- name: Adicionando Configuracoes Calico
+  ansible.builtin.copy:
+    src: calico-custom-resources.yaml
+    dest: /tmp/calico-custom-resources.yaml
+
+- name: Aplicando configurações Calico Operator
+  ansible.builtin.command:
+    cmd: kubectl create -f /tmp/calico-custom-resources.yaml
+  register: calico_result_config

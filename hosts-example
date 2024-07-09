@@ -13,6 +13,9 @@
 10.10.10.8
 
 [all:vars]
-control_plane_url='10.10.10.1:6443' #Recommended create LB haproxy for your control plane url 
-kubernetes_version="1.23.3"
+user_run="administrador"
+control_plane_url='kube.pms.ba.gov.br:6443'
+kubernetes_version="1.30"
+kubernetes_pod_network_cidr="192.168.0.0/23"
+kubernetes_service_cidr="192.168.2.0/23"
 ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
